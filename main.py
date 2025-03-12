@@ -1,8 +1,9 @@
-from email.utils import decode_params
-
-
 class Automate:
+    ''' Classe représentant un automate avec des etats et des transitions'''
     def __init__(self, nom):
+        ''' Constructeur de la classe Automate
+        :param nom: nom du fichier texte contenant la description de l'automate
+        '''
         self.nom = nom
         print("Création de l'automate", nom)
         with open(nom+".txt", "r") as autoTxt:
@@ -28,6 +29,7 @@ class Automate:
                 self.transitions.append(Transition(transi))
 
     def affichage(self):
+        ''' Affichage de l''automate'''
         print("Lecture de l'automate", self.nom)
         print("Nombre de symboles:", self.nbSymboles)
         print("Nombre d'états:", self.nbEtats)
@@ -40,15 +42,27 @@ class Automate:
 
 
 class Etat:
+    ''' Classe représentant un état d'un automate'''
     def __init__(self, nom):
+        '''
+        Constructeur de la classe Etat
+        :param nom: nom de l'état
+        '''
         self.nom = nom
         self.initial = False
         self.final = False
+
     def __str__(self):
+        '''Permet de convertir l'état en chaine de caractères implicitement'''
         return str(self.nom)
 
 class Transition:
+    ''' Classe représentant une transition d'un automate'''
     def __init__(self, texte):
+        '''
+        Constructeur de la classe Transition
+        :param texte:texte de la forme "depart etiquette arrivee"
+        '''
         self.txt = texte.replace("\n","")
         i=0
         depart=""
@@ -65,9 +79,13 @@ class Transition:
             car = self.txt[i]
         self.symbole = etiquette
         self.arrivee = Etat(self.txt[i:])
+
     def affichage(self):
+        ''' Affichage de la transition'''
         print("Transition de", self.depart, "vers", self.arrivee, "avec l'étiquette", self.symbole,"\n")
+
     def __str__(self):
+        '''Permet de convertir la transition en chaine de caractères implicitement'''
         return self.txt
 
 t=Automate("test")
