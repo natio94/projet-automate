@@ -1,0 +1,3 @@
+def standardisation(){
+    print("bite")
+}
