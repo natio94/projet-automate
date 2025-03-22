@@ -456,10 +456,6 @@ class Transition:
         return hash(self.txt)
 
 if __name__ == "__main__":
-    # a=Automate("31")
-    # d=a.determiniser()
-    # d.affichage()
-    # d.affichageTable()
     rep=input("Voulez-vous afficher les executions de tous les automates? (o/n)")
     if rep=="o":
         for i in range(1,45):
@@ -468,7 +464,6 @@ if __name__ == "__main__":
             a=Automate(str(i))
             a.affichageTable(fichier)
             print("Determinisation",file=open(fichier,'a'))
-            print(a.est_deterministe())
             e=a.determiniser()
             e.affichageTable(fichier)
             print("Standardisation",file=open(fichier,'a'))
@@ -485,7 +480,6 @@ if __name__ == "__main__":
             a = Automate(rep)
             a.affichageTable()
             print("Determinisation")
-            print(a.est_deterministe())
             e = a.determiniser()
             e.affichageTable()
             print("Standardisation")
