@@ -1,11 +1,26 @@
 from main import *
 def est_standard(auto:Automate):
+    ''' Vue que est_deterministe dit si l'automate a plusieurs entrée je le réutilise,
+    et je demande en plus si il y a des transitions qui arrivent vers l'état initiale
+    True si standar false si non
+    '''
     if (est_deterministe(auto) and auto.etatsInitiaux[0].transiEntrante == []):
         return True
     return False
 
 
 def standardisation(auto:Automate):
+    '''
+    d'abbord je test pour savoir si l'automate est pas déjà standar
+    enssuite je crée un nouvelle état nomé "i" qui vas étre le nouveau
+    état initiale
+    la copie des etats initiale est pour pouvoir garder une trace
+    je fait 2 boucles qui parcour la premiere les ellements initiaux de l'automate
+    l'autre prend les transitions sortantes
+    je crée enssuite les nouvelles transition et suprime après chaque ittération
+    les ancien état initiaux de la liste etatsInitiaux pour mettre après le nouveau
+    la fonction renvoie l'affichage de l'automate
+    '''
     if (est_standard(auto) == True):
         return auto.affichage()
     else :
