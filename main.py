@@ -19,8 +19,6 @@ class Automate:
         ''' Constructeur de la classe Automate
         :param nom: nom du fichier texte contenant la description de l'automate
         :param empty: 1 si l'on veut creer un automate est vide rien sinon
-
-
         '''
         self.nom = nom
         print("Création de l'automate", nom)
@@ -29,18 +27,24 @@ class Automate:
                 self.nbSymboles = autoTxt.readline()
                 self.nbEtats = autoTxt.readline()
                 self.etats=[]
-                for i in range(int(self.nbEtats)):
-                    self.etats.append(Etat(i))
+                self.etatsInitiaux = []
                 txtEtatInitiaux = autoTxt.readline()
                 self.nbEtatsInitiaux = int(txtEtatInitiaux.split()[0])
-                self.etatsInitiaux = set(txtEtatInitiaux.split()[1:])
-                for etat in self.etatsInitiaux:
-                    self.etats[int(etat)].initial=True
                 txtEtatFinaux = autoTxt.readline()
                 self.nbEtatsFinaux = int(txtEtatFinaux.split()[0])
-                self.etatsFinaux = set(txtEtatFinaux.split()[1:]) #a changer
-                for etat in self.etatsFinaux:
-                    self.etats[int(etat)].final=True
+                self.etatsFinaux = []
+                for i in range(int(self.nbEtats)):
+                    etat = Etat(str(i))
+                    self.etats.append(etat)
+                    if str(i) in txtEtatInitiaux.split()[1:]:
+                        etat.initial = True
+                        self.etatsInitiaux.append(etat)
+                    if str(i) in txtEtatFinaux.split()[1:]:
+                        etat.final = True
+                        self.etatsFinaux.append(etat)
+                if self.nbEtatsInitiaux != len(self.etatsInitiaux) or self.nbEtatsFinaux != len(self.etatsFinaux):
+                    raise ValueError(
+                        "le nombre d'états initiaux ou finaux donné ne correspond pas au nombre d'états initiaux ou finaux trouvés")
                 self.nbTransitions = autoTxt.readline()
                 txtTransi=autoTxt.readlines()
                 self.transitions=[]

@@ -1,8 +1,9 @@
 from main import *
+from main import *
 def est_standard(auto:Automate):
     print("je suis dans standar")
     print(auto.etatsInitiaux)
-    if (est_deterministe(auto)):
+    if (est_deterministe(auto) ):
         return True
 
 
