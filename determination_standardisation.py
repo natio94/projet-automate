@@ -1,13 +1,15 @@
 from main import *
-from main import *
 def est_standard(auto:Automate):
-    if (auto.nbEtatsInitiaux != 1):
-        return False
-    if ()
+    print("je suis dans standar")
+    print(auto.etatsInitiaux)
+    if (est_deterministe(auto)):
+        return True
+
+
 
 def est_deterministe(auto:Automate):
     if auto.nbEtatsInitiaux!=1:
-        return 0
+        return False
     etatSymb=[]
     for transi in auto.transitions:
         etatSymb.append(str(transi.depart)+str(transi.symbole))
@@ -25,7 +27,9 @@ def determinisation(auto:Automate):
 
 
 t=Automate("automates/5")
+print(est_standard(t))
 print(est_deterministe(t))
+
 t.affichage()
 determinisation(t)
 for etat in t.etats:
