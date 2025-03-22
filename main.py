@@ -29,7 +29,6 @@ class Automate:
                 self.etatsInitiaux = []
                 txtEtatInitiaux = autoTxt.readline()
                 self.nbEtatsInitiaux = int(txtEtatInitiaux.split()[0])
-                print(txtEtatInitiaux.split())
                 txtEtatFinaux = autoTxt.readline()
                 self.nbEtatsFinaux = int(txtEtatFinaux.split()[0])
                 self.etatsFinaux = []
@@ -72,6 +71,8 @@ class Automate:
 
                     self.transitions.append(Transition(depart,etiquette,arrivee))
             self.alphabet = self.getAlphabet()
+            if 'E' in self.alphabet:
+                self.asynchrone = True
         else:
             self.nbSymboles=0
             self.nbEtats=0
@@ -83,6 +84,7 @@ class Automate:
             self.nbTransitions=0
             self.transitions=[]
             self.alphabet =[]
+            self.asynchrone = False
 
     def getAlphabet(self):
         '''Recupere l'alphabet de l'automate
@@ -117,7 +119,6 @@ class Automate:
         On supprime également les autres etats initiaux de la liste de l'automate
         """
         for etat in etatInit:
-            print(etat)
             for transi in etat.transiSortante:
                 auto.transitions.append(Transition(nouvEtat, transi.symbole, transi.arrivee))
             etat.initial=False
@@ -189,6 +190,8 @@ class Automate:
             return False
         etatSymb = []
         for transi in self.transitions:
+            if transi.symbole=="E":
+                continue
             etatSymb.append(str(transi.depart) + str(transi.symbole))
         return len(etatSymb) == len(set(etatSymb))
 
@@ -254,13 +257,13 @@ class Automate:
         symboles = list(self.alphabet)
 
         #On cree le haut du tableau
-        header = ["Etat"] + symboles + ["E/S"]
+        header = ["Etat"] + sorted(symboles) + ["E/S"]
         table = [] 
 
         #On cree un ligne pour chaque etat
         for etat in self.etats:
             ligne = [str(etat)]
-            for symbole in symboles:
+            for symbole in sorted(symboles):
                 #On cherche toutes les transitions sortantes de l'etat pour chaque symbole
                 destinations = set()
                 for transition in etat.transiSortante:
@@ -271,7 +274,6 @@ class Automate:
                 else:
                     ligne.append("-")
             #On termine par afficher si l'etat est initial ou final
-            print(etat,etat.initial)
             ligne.append("E-S" if etat.initial and etat.final else"S" if etat.final else "E" if etat.initial else  "")
             table.append(ligne)
 
@@ -370,21 +372,67 @@ class Transition:
         return hash(self.txt)
 
 if __name__ == "__main__":
+    rep=input("Voulez-vous afficher les executions de tous les automates? (o/n)")
+    if rep=="o":
+        for i in range(1,45):
+            fichier = 'traceAuto/' +str(i) + '.txt'
+            print('Debut du programme avec l\'automate ',i,file=open(fichier,'w'))
+            a=Automate(str(i))
+            a.affichageTable(fichier)
+            print("Determinisation",file=open(fichier,'a'))
+            print(a.est_deterministe())
+            e=a.determiniser()
+            e.affichageTable(fichier)
+            print("Standardisation",file=open(fichier,'a'))
+            s=a.standardiser()
+            s.affichageTable(fichier)
+            print("Complementaire",file=open(fichier,'a'))
+            c=a.complémentaire()
+            c.affichageTable(fichier)
 
-    for i in range(12,13):
-        fichier = 'traceAuto/' +str(i) + '.txt'
-        print('Debut du programme avec l\'automate ',i,file=open(fichier,'w'))
-        a=Automate(str(i))
-        a.affichageTable(fichier)
-        print("Determinisation",file=open(fichier,'a'))
-        e=a.determiniser()
-        e.affichageTable(fichier)
-        print("Standardisation",file=open(fichier,'a'))
-        s=a.standardiser()
-        s.affichageTable(fichier)
-        print("Complementaire",file=open(fichier,'a'))
-        c=a.complémentaire()
-        c.affichageTable(fichier)
+    else:
+        rep=input("Quel automate voulez-vous executer ?\n")
+        boucle=1
+        while boucle:
+            print('Debut du programme avec l\'automate '+rep)
+            a = Automate(rep)
+            a.affichageTable()
+            print("Determinisation")
+            print(a.est_deterministe())
+            e = a.determiniser()
+            e.affichageTable()
+            print("Standardisation")
+            s = a.standardiser()
+            s.affichageTable()
+            print("Complementaire")
+            c = a.complémentaire()
+            c.affichageTable()
+            mot=1
+            rep = input("Voulez-vous lire un mot avec cet automate ? (o/n)\n")
+            if rep=='n':
+                mot=0
+            while mot:
+                if rep=="o":
+                    mot=input("Veuillez entrer un mot : ")
+                    print("Lecture du mot ",mot)
+                    print('Avec l\'automate standard')
+                    print("Mot reconnu" if a.litMot(mot) else "Mot non reconnu")
+                    print('Avec l\'automate determinise')
+                    print("Mot reconnu" if e.litMot(mot) else "Mot non reconnu")
+                    print('Avec l\'automate standardise')
+                    print("Mot reconnu" if s.litMot(mot) else "Mot non reconnu")
+                    print('Avec l\'automate complementaire')
+                    print("Mot reconnu" if c.litMot(mot) else "Mot non reconnu")
+                rep=input("Voulez-vous lire un autre mot ? (o/n)\n")
+                if rep=="n":
+                    mot=0
+                else:
+                    rep="o"
+            rep=input("Voulez-vous continuer avec d'autres automates ? (o/n)\n")
+            if rep=="n":
+                boucle=0
+            else:
+                rep=input("Quel automate voulez-vous executer ? ")
 
 
 
