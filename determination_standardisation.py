@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from main import *
 def est_standard(auto:Automate):
     ''' Vue que est_deterministe dit si l'automate a plusieurs entrée je le réutilise,
@@ -24,7 +26,7 @@ def standardisation(auto:Automate):
     if (est_standard(auto) == True):
         return auto.affichage()
     else :
-        c = Etat(1000)
+        c = Etat("i")
         etatInit=deepcopy(auto.etatsInitiaux)
         for i in etatInit:
             for e in i.transiSortante:
