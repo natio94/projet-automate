@@ -1,8 +1,24 @@
 from main import *
 def est_standard(auto:Automate):
-    if (est_deterministe(auto) and list(auto.etatsInitiaux)[0].transiEntrante == []):
+    if (est_deterministe(auto) and auto.etatsInitiaux[0].transiEntrante == []):
         return True
     return False
+
+
+def standardisation(auto:Automate):
+    if (est_standard(auto) == True):
+        return auto.affichage()
+    else :
+        c = Etat(1000)
+        etatInit=deepcopy(auto.etatsInitiaux)
+        for i in etatInit:
+            for e in i.transiSortante:
+                auto.transitions.append(Transition(c , e.symbole, e.arrivee))
+            auto.etatsInitiaux.remove(i)
+        c.final=any(etat.final for etat in etatInit)
+        auto.etatsInitiaux.append(c)
+        auto.etats.append(c)
+    return auto.affichage()
 
 
 def est_deterministe(auto:Automate):
@@ -26,13 +42,8 @@ def determinisation(auto:Automate):
 
 t=Automate("automates/5")
 print(est_standard(t))
+print(standardisation(t))
 print(est_deterministe(t))
 
-t.affichage()
-determinisation(t)
-for etat in t.etats:
-    print(etat)
-n=t.etats[1]+t.etats[3]
-print("eeee",*t.etats[3].transiSortante)
-print('experience',n,'s',*n.transiSortante,"e",*n.transiEntrante)
+
 
