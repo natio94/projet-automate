@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+from copy import deepcopy
 
 
 class Automate:
@@ -73,6 +73,8 @@ class Automate:
             self.alphabet = self.getAlphabet()
             if 'E' in self.alphabet:
                 self.asynchrone = True
+            else:
+                self.asynchrone = False
         else:
             self.nbSymboles=0
             self.nbEtats=0
@@ -131,56 +133,101 @@ class Automate:
         auto.etats.append(nouvEtat)
         return auto
 
+
+
     def determiniser(self):
         """Determinisation de l'automate
         :return: Le nouvel automate déterminisé
         """
         if self.est_deterministe():
             return deepcopy(self)
-        setEtatInital = frozenset(self.etatsInitiaux)
-        etatsNouvAuto = {}
-        transiNouvAuto = []
-        queue = []
-        departNouvAuto = Etat(self.changerNomEtat(setEtatInital))
-        departNouvAuto.initial = True
-        etatsNouvAuto[setEtatInital] = departNouvAuto
-        queue.append(setEtatInital)
+        if self.asynchrone:
+            setEtatInitial = set(self.etatsInitiaux)
+            setEtatInit = set()
+            for etat in setEtatInitial:
+                for etatFermeture in etat.getFermeture():
+                    setEtatInit.add(etatFermeture)
+            setEtatInitial=frozenset(setEtatInit)
+            etatsNouvAuto = {}
+            transiNouvAuto = []
+            queue = []
+            departNouvAuto = Etat(self.changerNomEtat(setEtatInitial))
+            departNouvAuto.initial = True
+            etatsNouvAuto[setEtatInitial] = departNouvAuto
+            queue.append(setEtatInitial)
 
-        # On parcourt les états de l'automate
-        while queue:
-            setEtatCourant = queue.pop(0)
-            etatCourant = etatsNouvAuto[setEtatCourant]
-            etatCourant.final = any(state.final for state in setEtatCourant)
-            # On ajoute les etats des transitions sortantes du premier etat fusionne a une liste pour être sur de tous les traiter
-            for symbole in self.alphabet:
-                prochainSetEtat = set()
-                for etatAuto in setEtatCourant:
-                    for transition in etatAuto.transiSortante:
-                        if transition.symbole == symbole:
-                            prochainSetEtat.add(transition.arrivee)
-                if not prochainSetEtat:
-                    continue
-                prochainSetEtat = frozenset(prochainSetEtat)
-                # on fusionne les etats non traites
-                if prochainSetEtat not in etatsNouvAuto:
-                    nouvEtat = Etat(self.changerNomEtat(prochainSetEtat))
-                    etatsNouvAuto[prochainSetEtat] = nouvEtat
-                    queue.append(prochainSetEtat)
-                # on redefinit la transition avec les nouveaux etats fusionnes
-                transiNouvAuto.append(Transition(etatCourant, symbole, etatsNouvAuto[prochainSetEtat]))
+            while queue:
+                setEtatCourant = queue.pop(0)
+                etatCourant = etatsNouvAuto[setEtatCourant]
+                etat=[]
+                #On fait en sorte que l'etat soit final s'il y a un etat final parmi les etats fusionnes
+                for et in setEtatCourant:
+                    for etF in et.getFermeture():
+                        etat.append(etF)
+                etatCourant.final = any(etat.final for etat in etat)
+                # On ajoute les etats des transitions sortantes du premier etat fusionne a une liste pour être sur de tous les traiter
+                for symbole in self.alphabet:
+                    prochainSetEtat = set()
+                    for etatAuto in setEtatCourant:
+                        for etat in etatAuto.getFermeture():
+                            for transition in etat.transiSortante:
+                                if transition.symbole == symbole and transition.symbole!="E":
+                                    prochainSetEtat.add(transition.arrivee)
+                    if not prochainSetEtat:
+                        continue
+                    prochainSetEtat = frozenset(prochainSetEtat)
+                    # on fusionne les etats non traites
+                    if prochainSetEtat not in etatsNouvAuto:
+                        nouvEtat = Etat(self.changerNomEtat(prochainSetEtat))
+                        etatsNouvAuto[prochainSetEtat] = nouvEtat
+                        queue.append(prochainSetEtat)
+                    # on redefinit la transition avec les nouveaux etats fusionnes
+                    transiNouvAuto.append(Transition(etatCourant, symbole, etatsNouvAuto[prochainSetEtat]))
+
+        else:
+            setEtatInitial = frozenset(self.etatsInitiaux)
+            etatsNouvAuto = {}
+            transiNouvAuto = []
+            queue = []
+            departNouvAuto = Etat(self.changerNomEtat(setEtatInitial))
+            departNouvAuto.initial = True
+            etatsNouvAuto[setEtatInitial] = departNouvAuto
+            queue.append(setEtatInitial)
+            # On parcourt les états de l'automate
+            while queue:
+                setEtatCourant = queue.pop(0)
+                etatCourant = etatsNouvAuto[setEtatCourant]
+                etatCourant.final = any(etat.final for etat in setEtatCourant)
+                # On ajoute les etats des transitions sortantes du premier etat fusionne a une liste pour être sur de tous les traiter
+                for symbole in self.alphabet:
+                    prochainSetEtat = set()
+                    for etatAuto in setEtatCourant:
+                        for transition in etatAuto.transiSortante:
+                            if transition.symbole == symbole:
+                                prochainSetEtat.add(transition.arrivee)
+                    if not prochainSetEtat:
+                        continue
+                    prochainSetEtat = frozenset(prochainSetEtat)
+                    # on fusionne les etats non traites
+                    if prochainSetEtat not in etatsNouvAuto:
+                        nouvEtat = Etat(self.changerNomEtat(prochainSetEtat))
+                        etatsNouvAuto[prochainSetEtat] = nouvEtat
+                        queue.append(prochainSetEtat)
+                    # on redefinit la transition avec les nouveaux etats fusionnes
+                    transiNouvAuto.append(Transition(etatCourant, symbole, etatsNouvAuto[prochainSetEtat]))
 
         # On finit par tout ajouter au nouvel automate
         nouvAuto = Automate(self.nom, 1)
         nouvAuto.etats = list(etatsNouvAuto.values())
         nouvAuto.etatsInitiaux = [departNouvAuto]
-        nouvAuto.etatsFinaux = [state for state in etatsNouvAuto.values() if state.final]
+        nouvAuto.etatsFinaux = [etat for etat in etatsNouvAuto.values() if etat.final]
         nouvAuto.transitions = transiNouvAuto
         nouvAuto.nbEtats = len(nouvAuto.etats)
         nouvAuto.nbEtatsInitiaux = 1
         nouvAuto.nbEtatsFinaux = len(nouvAuto.etatsFinaux)
         nouvAuto.nbTransitions = len(nouvAuto.transitions)
-        nouvAuto.nbSymboles = self.nbSymboles
-        nouvAuto.alphabet = self.alphabet
+        nouvAuto.alphabet = nouvAuto.getAlphabet()
+        nouvAuto.nbSymboles = len(nouvAuto.alphabet)
         return nouvAuto
 
     def est_deterministe(self):
@@ -189,9 +236,9 @@ class Automate:
         if self.nbEtatsInitiaux != 1:
             return False
         etatSymb = []
+        if self.asynchrone:
+            return False
         for transi in self.transitions:
-            if transi.symbole=="E":
-                continue
             etatSymb.append(str(transi.depart) + str(transi.symbole))
         return len(etatSymb) == len(set(etatSymb))
 
@@ -199,7 +246,7 @@ class Automate:
         """Une methode qui permet de changer le nom d'un etat fusionne
         :param setEtat: ensemble des etats fusionnes
         :return: le nouveau nom de l'etat fusionne"""
-        return "-".join(sorted(etat.nom for etat in setEtat))
+        return "-".join(sorted(set(etatF.nom for etat in setEtat for etatF in etat.getFermeture())))
 
     def complémentaire(self):
         """Calcul du complémentaire de l'automate
@@ -223,7 +270,7 @@ class Automate:
         """Lecture d'un mot par l'automate
         :param mot: mot à lire
         :return: True si le mot est accepté, False sinon"""
-        if not self.est_deterministe():
+        if not self.est_deterministe() and not self.asynchrone:
            automate=self.determiniser()
         else:
             automate=self
@@ -234,6 +281,7 @@ class Automate:
                 for etat in etatCourant.getFermeture():
                     for transi in etat.transiSortante:
                         if transi.symbole == lettre:
+
                             etatCourant = transi.arrivee
                             avance = True
                             break
@@ -408,6 +456,10 @@ class Transition:
         return hash(self.txt)
 
 if __name__ == "__main__":
+    # a=Automate("31")
+    # d=a.determiniser()
+    # d.affichage()
+    # d.affichageTable()
     rep=input("Voulez-vous afficher les executions de tous les automates? (o/n)")
     if rep=="o":
         for i in range(1,45):
@@ -442,6 +494,7 @@ if __name__ == "__main__":
             print("Complementaire")
             c = a.complémentaire()
             c.affichageTable()
+
             mot=1
             rep = input("Voulez-vous lire un mot avec cet automate ? (o/n)\n")
             if rep=='n':
