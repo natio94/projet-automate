@@ -20,16 +20,16 @@ class Automate:
         :param nom: nom du fichier texte contenant la description de l'automate
         :param empty: 1 si l'on veut creer un automate est vide rien sinon
         """
-        self.nom = nom
-        print("Création de l'automate", nom)
+        self.nom =nom
         if not empty:
-            with open(nom+".txt", "r") as autoTxt:
+            with open('automates/'+nom+".txt", "r") as autoTxt:
                 self.nbSymboles = autoTxt.readline()
                 self.nbEtats = autoTxt.readline()
                 self.etats=[]
                 self.etatsInitiaux = []
                 txtEtatInitiaux = autoTxt.readline()
                 self.nbEtatsInitiaux = int(txtEtatInitiaux.split()[0])
+                print(txtEtatInitiaux.split())
                 txtEtatFinaux = autoTxt.readline()
                 self.nbEtatsFinaux = int(txtEtatFinaux.split()[0])
                 self.etatsFinaux = []
@@ -44,28 +44,34 @@ class Automate:
                         self.etatsFinaux.append(etat)
                 if self.nbEtatsInitiaux != len(self.etatsInitiaux) or self.nbEtatsFinaux != len(self.etatsFinaux):
                     raise ValueError(
-                        "le nombre d'états initiaux ou finaux donné ne correspond pas au nombre d'états initiaux ou finaux trouvés")
+                        "le nombre d'états initiaux ou finaux donné ne correspond pas au nombre d'états initiaux ou finaux trouvés : ", self.nbEtatsInitiaux, len(self.etatsInitiaux), self.nbEtatsFinaux, len(self.etatsFinaux))
                 self.nbTransitions = autoTxt.readline()
                 txtTransi=autoTxt.readlines()
                 self.transitions=[]
                 for transi in txtTransi:
                     txt = transi.replace("\n", "")
-                    i = 0
-                    depart = ""
-                    car = txt[i]
-                    while car.isdigit() and i <= len(txt):
-                        depart += car
-                        i += 1
+                    if "-"in txt:
+                        depart, etiquette, arrivee = txt.split("-")
+                        arrivee=self.etats[int(arrivee)]
+                    else:
+                        i = 0
+                        depart = ""
                         car = txt[i]
+                        while car.isdigit() and i <= len(txt):
+                            depart += car
+                            i += 1
+                            car = txt[i]
+                        etiquette = ""
+                        while car.isalpha() and i <= len(txt):
+                            etiquette += txt[i]
+                            i += 1
+                            car = txt[i]
+                        arrivee = self.etats[int(txt[i:])]
                     depart = self.etats[int(depart)]
-                    etiquette = ""
-                    while car.isalpha() and i <= len(txt):
-                        etiquette += txt[i]
-                        i += 1
-                        car = txt[i]
-                    arrivee = self.etats[int(txt[i:])]
+
+
                     self.transitions.append(Transition(depart,etiquette,arrivee))
-                    self.alphabet = self.getAlphabet()
+            self.alphabet = self.getAlphabet()
         else:
             self.nbSymboles=0
             self.nbEtats=0
@@ -79,6 +85,9 @@ class Automate:
             self.alphabet =[]
 
     def getAlphabet(self):
+        '''Recupere l'alphabet de l'automate
+        return: l'alphabet de l'automate
+        '''
         alphabet = set()
         for transition in self.transitions:
             alphabet.add(transition.symbole)
@@ -86,11 +95,9 @@ class Automate:
 
     def est_standard(self):
         ''' Verifie si l'automate est standard
-        !return: True si l'automate est standard, False sinon
+        return: True si l'automate est standard, False sinon
         '''
-        if (self.est_deterministe and self.etatsInitiaux[0].transiEntrante == []):
-            return True
-        return False
+        return (self.est_deterministe() and self.etatsInitiaux[0].transiEntrante == [])
 
     def standardiser(self):
         '''
@@ -98,24 +105,28 @@ class Automate:
         :return: L'automate standardisé
         '''
         auto = deepcopy(self)
-        if (auto.est_standard() == True):
+        if auto.est_standard():
             return auto
         if not self.est_deterministe():
             auto = self.determiniser()
+        if auto.est_standard():
+            return auto
         nouvEtat = Etat("i")
-        etatInit = deepcopy(auto.etatsInitiaux)
+        etatInit = auto.etatsInitiaux
         """On parcourt tous les états initiaux de l'automate ainsi que leurs transitions sortantes pour les copier avec le nouvel état initial en depart
         On supprime également les autres etats initiaux de la liste de l'automate
         """
         for etat in etatInit:
+            print(etat)
             for transi in etat.transiSortante:
                 auto.transitions.append(Transition(nouvEtat, transi.symbole, transi.arrivee))
-            auto.etatsInitiaux.remove(etat)
+            etat.initial=False
         #On ajoute le nouvel état initial à la liste des états initiaux de l'automate et on le met final s'il y a un état final parmi les états initiaux
         nouvEtat.final = any(etat.final for etat in etatInit)
         if nouvEtat.final:
             auto.etatsFinaux.append(nouvEtat)
-        auto.etatsInitiaux.append(nouvEtat)
+        nouvEtat.initial = True
+        auto.etatsInitiaux=[nouvEtat]
         auto.etats.append(nouvEtat)
         return auto
 
@@ -158,7 +169,7 @@ class Automate:
                 transiNouvAuto.append(Transition(etatCourant, symbole, etatsNouvAuto[prochainSetEtat]))
 
         # On finit par tout ajouter au nouvel automate
-        nouvAuto = Automate("automates/5", 1)
+        nouvAuto = Automate(self.nom, 1)
         nouvAuto.etats = list(etatsNouvAuto.values())
         nouvAuto.etatsInitiaux = [departNouvAuto]
         nouvAuto.etatsFinaux = [state for state in etatsNouvAuto.values() if state.final]
@@ -167,6 +178,8 @@ class Automate:
         nouvAuto.nbEtatsInitiaux = 1
         nouvAuto.nbEtatsFinaux = len(nouvAuto.etatsFinaux)
         nouvAuto.nbTransitions = len(nouvAuto.transitions)
+        nouvAuto.nbSymboles = self.nbSymboles
+        nouvAuto.alphabet = self.alphabet
         return nouvAuto
 
     def est_deterministe(self):
@@ -175,7 +188,6 @@ class Automate:
         if self.nbEtatsInitiaux != 1:
             return False
         etatSymb = []
-        #On verifie qu'il n'y a pas de doublon dans les transitions
         for transi in self.transitions:
             etatSymb.append(str(transi.depart) + str(transi.symbole))
         return len(etatSymb) == len(set(etatSymb))
@@ -237,7 +249,54 @@ class Automate:
         print("Nombre de transitions:", self.nbTransitions)
         print("Transitions:",self.transitions)
 
+    def affichageTable(self, file=''):
+        """Affiche la table de transition de l'automate"""
+        symboles = list(self.alphabet)
 
+        #On cree le haut du tableau
+        header = ["Etat"] + symboles + ["E/S"]
+        table = [] 
+
+        #On cree un ligne pour chaque etat
+        for etat in self.etats:
+            ligne = [str(etat)]
+            for symbole in symboles:
+                #On cherche toutes les transitions sortantes de l'etat pour chaque symbole
+                destinations = set()
+                for transition in etat.transiSortante:
+                    if transition.symbole == symbole:
+                        destinations.add(str(transition.arrivee))
+                if destinations:
+                    ligne.append(", ".join(sorted(destinations)))
+                else:
+                    ligne.append("-")
+            #On termine par afficher si l'etat est initial ou final
+            print(etat,etat.initial)
+            ligne.append("E-S" if etat.initial and etat.final else"S" if etat.final else "E" if etat.initial else  "")
+            table.append(ligne)
+
+        #On calcule la largeur de chaque colonne
+        largColonnes = [max(len(str(item)) for item in col) for col in zip(header, *table)]
+
+        
+        def afficheLigne(ligne):
+            """Fonction permettant d'afficher une ligne du tableau"""
+            return " | ".join(f"{obj:<{larg}}" for obj, larg in zip(ligne, largColonnes))
+
+        if file!='':
+            print('Automate',self.nom, file=open(file, 'a'))
+            print(afficheLigne(header), file=open(file, 'a'))
+            print("-" * (sum(largColonnes) + 3 * (len(largColonnes) - 1)), file=open(file, 'a'))
+            for ligne in table:
+                print(afficheLigne(ligne), file=open(file, 'a'))
+            print('', file=open(file, 'a'))
+
+        print('Automate',self.nom)
+        print(afficheLigne(header))
+        print("-" * (sum(largColonnes) + 3 * (len(largColonnes) - 1)))
+        for ligne in table:
+            print(afficheLigne(ligne))
+        print()
 
 class Etat:
     etatExistant = []
@@ -284,7 +343,6 @@ class Transition:
         self.arrivee = arrivee
         self.txt = str(self.depart) + self.symbole + str(self.arrivee)
         if self not in depart.transiSortante:
-            print(self,depart.transiSortante)
             depart.transiSortante.append(self)
         if self not in arrivee.transiEntrante:
             arrivee.transiEntrante.append(self)
@@ -312,7 +370,21 @@ class Transition:
         return hash(self.txt)
 
 if __name__ == "__main__":
-    t=Automate("automates/6")
-    t.affichage()
-    e=t.determiniser()
-    e.affichage()
+
+    for i in range(12,13):
+        fichier = 'traceAuto/' +str(i) + '.txt'
+        print('Debut du programme avec l\'automate ',i,file=open(fichier,'w'))
+        a=Automate(str(i))
+        a.affichageTable(fichier)
+        print("Determinisation",file=open(fichier,'a'))
+        e=a.determiniser()
+        e.affichageTable(fichier)
+        print("Standardisation",file=open(fichier,'a'))
+        s=a.standardiser()
+        s.affichageTable(fichier)
+        print("Complementaire",file=open(fichier,'a'))
+        c=a.complémentaire()
+        c.affichageTable(fichier)
+
+
+
