@@ -227,6 +227,21 @@ class Automate:
            automate=self.determiniser()
         else:
             automate=self
+        #On verifie si l'automate est asynchrone
+        if automate.asynchrone:
+            etatCourant = automate.etatsInitiaux[0]
+            for lettre in mot:
+                for etat in etatCourant.getFermeture():
+                    for transi in etat.transiSortante:
+                        if transi.symbole == lettre:
+                            etatCourant = transi.arrivee
+                            avance = True
+                            break
+                if avance != True:
+                    return False
+                avance = False
+            # On verifie si l'etat courant est bien final
+            return any(etat.final for etat in etatCourant.getFermeture())
         etatCourant = automate.etatsInitiaux[0]
         #On parcourt l'automate en fonction des lettres du mot
         for lettre in mot:
@@ -303,7 +318,6 @@ class Automate:
 class Etat:
     etatExistant = []
     ''' Classe représentant un état d'un automate'''
-
     def __init__(self, nom):
         """
         Constructeur de la classe Etat
@@ -320,17 +334,38 @@ class Etat:
         else:
             self.doublon=True
 
+    def getFermeture(self):
+        """Recupere la fermeture epsilon d'un etat'
+        :return: la fermeture epsilon de l'etat"""
+        fermeture = set()
+        fermeture.add(self)
+        queue = [self]
+        while queue:
+            etatCourant = queue.pop(0)
+            for transi in etatCourant.transiSortante:
+                if transi.symbole == "E" and transi.arrivee not in fermeture:
+                    fermeture.add(transi.arrivee)
+                    queue.append(transi.arrivee)
+        return fermeture
+
     def __str__(self):
-        """Permet de convertir l'état en chaine de caractères implicitement"""
+        """Permet de convertir l'état en chaine de caractères implicitement
+        :return: le nom de l'état"""
         return str(self.nom)
 
     def __repr__(self):
+        """Permet d'afficher l'état quand il est dans une liste
+        :return: le nom de l'état"""
         return str(self.nom)
 
     def __eq__(self, other):
+        """Permet de comparer deux états
+        :return: True si les deux états sont égaux, False sinon"""
         return self.nom==other.nom
 
     def __hash__(self):
+        """Permet a un etat d'etre dans un set
+        :return: le hash de l'etat"""
         return hash(self.nom)
 
 class Transition:
@@ -338,7 +373,9 @@ class Transition:
     def __init__(self, depart, etiquette,arrivee):
         """
         Constructeur de la classe Transition
-        :param texte:texte de la forme "depart etiquette arrivee"
+        :param depart: etat de depart de la transition
+        :param etiquette: etiquette de la transition
+        :param arrivee: etat d'arrivee de la transition
         """
         self.depart = depart
         self.symbole = etiquette
@@ -349,26 +386,25 @@ class Transition:
         if self not in arrivee.transiEntrante:
             arrivee.transiEntrante.append(self)
 
-    def check(self, val, pos):
-        if pos=="d":
-            return self.depart.nom==val
-        elif pos=="a":
-            return self.arrivee.nom==val
-        elif pos=="s":
-            return self.symbole==val
-
 
     def __str__(self):
-        """Permet de convertir la transition en chaine de caractères implicitement"""
+        """Permet de convertir la transition en chaine de caractères
+        :return: la transition sous forme de chaine de caractere"""
         return self.txt
 
     def __repr__(self):
+        """Permet d'afficher la transition quand elle est dans une liste
+        :return: la transition sous forme de chaine de caract"""
         return self.txt
 
     def __eq__(self, other):
+        """Permet de comparer deux transitions
+        :return: True si les deux transitions sont égales, False sinon"""
         return self.txt==other.txt
 
     def __hash__(self):
+        """Permet a une transition d'etre dans un set
+        :return: le hash de la transition"""
         return hash(self.txt)
 
 if __name__ == "__main__":
@@ -389,7 +425,6 @@ if __name__ == "__main__":
             print("Complementaire",file=open(fichier,'a'))
             c=a.complémentaire()
             c.affichageTable(fichier)
-
     else:
         rep=input("Quel automate voulez-vous executer ?\n")
         boucle=1
